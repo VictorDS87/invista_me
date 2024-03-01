@@ -1,0 +1,7 @@
+asgiref
+Django==4.2.6
+django-crispy-forms
+gunicorn
+psycopg2-binary
+pytz
+sqlparse
