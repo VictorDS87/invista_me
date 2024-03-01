@@ -1,17 +1,60 @@
-from django.shortcuts import render
-from django.shortcuts import HttpResponse
+from django.shortcuts import render, redirect, HttpResponse
+from .models import Investimento
+from .forms import InvestimentoForm
+from django.contrib.auth.decorators import login_required
 
-def pagina_inicial(request):
-    return HttpResponse('Pronto para investir!')
 
-def pagina_contato(request):
-    return HttpResponse('Pagina de contato')
+def criar(request):
+    # Responsavel por criar um novo investimento
+    if request.method == 'POST':
+        investimento_form = InvestimentoForm(request.POST)
+        if investimento_form.is_valid():
+            investimento_form.save()
+        return redirect('investimentos')
+    else:
+        investimento_form = InvestimentoForm()
+        formulario = {
+            'formulario': investimento_form
+        }
+        return render(request, 'investimentos/novo_investimento.html', context=formulario)
 
-def novo_investimento(request):
-    return render(request, 'investimentos/novo_investimento.html')
+@login_required
+def editar(request, id_investimento):
+    # Responsavel por editar um investimento já existente
+    investimento = Investimento.objects.get(pk=id_investimento)
+    # caso requesição seja get preencha as informações do formulario
+    if request.method == 'GET':
+        formulario = InvestimentoForm(instance=investimento)
+        return render(request, 'investimentos/novo_investimento.html', {'formulario': formulario})
+    else:
+        formulario = InvestimentoForm(request.POST, instance=investimento)
+        if formulario.is_valid():
+            formulario.save()
+        return redirect('investimentos')
 
-def investimento_registrado(request): 
-    investimento = {
-        'tipo_investimento': request.POST.get('TipoInvestimento')
+@login_required  
+def investimentos(request):
+    # pegar todos os dados existentes na tabela investimentos
+    dados = {
+        'dados': Investimento.objects.all()
     }
-    return render(request, 'investimentos/investimento_registrado.html', investimento)
+
+    return render(request, 'investimentos/investimentos.html', context=dados)
+
+@login_required
+def detalhe(request, id_investimento):
+    # filtrar pela primary key, usando o id como filtro
+    # precisa sempre ser passado um dicionario, por isso é importante
+    # converter o valor sempre para um dicionario
+    dados = {
+        'dados': Investimento.objects.get(pk=id_investimento)
+    }
+    return render(request, 'investimentos/detalhe.html', dados)    
+
+@login_required
+def excluir(request, id_investimento):
+    investimento = Investimento.objects.get(pk=id_investimento)
+    if request.method == "POST":
+        investimento.delete()
+        return redirect('investimentos')
+    return render(request, 'investimentos/confirmar_exclusao.html', {'item': investimento})
